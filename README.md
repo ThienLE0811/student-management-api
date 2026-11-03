@@ -98,6 +98,14 @@ spring.jpa.hibernate.ddl-auto=update
 
 Dự án được phát triển theo lộ trình học Spring Boot & Database, bao gồm các giai đoạn: thiết kế entity, CRUD cơ bản, validation & exception handling, quan hệ giữa các bảng, phân trang/tìm kiếm, bảo mật (Spring Security/JWT) và triển khai.
 
+## Quy tắc trong tháng
+
+- **Quy tắc vàng**: không commit dòng code nào mà bạn không giải thích được. Khi AI viết, hỏi lại "vì sao" cho đến khi hiểu, hoặc xóa đi tự viết.
+- **Tuần 3**: không mở AI để viết code. Kẹt quá 30 phút thì chỉ nhờ AI giải thích thông báo lỗi, không xin code sửa sẵn.
+- **Nhật ký review AI** (từ tuần 4): mỗi lần AI viết sai (N+1, quên `@Transactional`, nuốt exception, dùng API cũ của Spring Boot 3…) thì ghi một dòng. Mục tiêu cuối tháng: ít nhất 10 lỗi.
+- **DB song song**: mỗi buổi 45–60 phút, tự gõ, không AI (trừ việc sinh dữ liệu mẫu). Chi tiết ở bảng "DB song song" dưới mỗi tuần.
+- **30 phút cuối buổi thứ Sáu**: trả lời câu hỏi tự kiểm tra của tuần, cập nhật nhật ký, đẩy code lên GitHub và gắn tag `week-N`.
+
 ## Đóng góp
 
 Đây là dự án cá nhân phục vụ mục đích học tập/thực hành. Các issue và pull request đóng góp (nếu có) sẽ được xem xét trực tiếp.
