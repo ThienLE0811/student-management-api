@@ -75,7 +75,7 @@ cd student-management-api
 
 ## Cấu hình database
 
-Cấu hình kết nối database sẽ được khai báo trong `application.properties` hoặc `application.yml`, ví dụ:
+Cấu hình kết nối database sẽ được khai báo trong `application.yml`, ví dụ:
 
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/student_management
