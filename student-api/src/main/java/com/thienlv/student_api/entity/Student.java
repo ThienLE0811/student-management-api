@@ -1,4 +1,4 @@
-package com.thienlv.student_api.controller;
+package com.thienlv.student_api.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
