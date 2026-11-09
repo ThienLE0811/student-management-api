@@ -53,7 +53,7 @@ public class StudentController {
     }
 
     @DeleteMapping("/api/students/{id}")
-    public ResponseEntity<Void> deleteStudent(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteById(@PathVariable Long id) {
         boolean isDeleted = studentService.deleteById(id);
         if (isDeleted) {
             return ResponseEntity.noContent().build();
