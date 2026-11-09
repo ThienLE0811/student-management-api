@@ -25,10 +25,8 @@ public class StudentController {
 
 
     @GetMapping("/api/students/{id}")
-    public ResponseEntity<StudentResponse> getDetailStudent(@PathVariable Long id) {
-        Optional<StudentResponse> student = studentService.getById(id);
-
-        return ResponseEntity.of(student);
+    public StudentResponse getDetailStudent(@PathVariable Long id) {
+        return studentService.getById(id);
     }
 
     @PostMapping("/api/students")
@@ -44,22 +42,14 @@ public class StudentController {
     }
 
     @PutMapping("/api/students/{id}")
-    public ResponseEntity<StudentResponse> updateStudent(@PathVariable Long id, @Valid @RequestBody StudentRequest request) {
-        Optional<StudentResponse> response = studentService.update(id, request);
-        return response.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
-
-//        if(response.isEmpty()) return ResponseEntity.notFound().build();
-//
-//        return ResponseEntity.ok(response.get());
+    public StudentResponse updateStudent(@PathVariable Long id, @Valid @RequestBody StudentRequest request) {
+        return studentService.update(id, request);
     }
 
     @DeleteMapping("/api/students/{id}")
     public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-        boolean isDeleted = studentService.deleteById(id);
-        if (isDeleted) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build();
+        studentService.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
 

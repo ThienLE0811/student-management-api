@@ -3,6 +3,8 @@ package com.thienlv.student_api.service;
 import com.thienlv.student_api.dto.StudentRequest;
 import com.thienlv.student_api.dto.StudentResponse;
 import com.thienlv.student_api.entity.Student;
+import com.thienlv.student_api.exception.DuplicateEmailException;
+import com.thienlv.student_api.exception.NotFoundException;
 import com.thienlv.student_api.repository.StudentRepository;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +13,6 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @Service
 public class StudentService {
@@ -54,30 +55,28 @@ public class StudentService {
                 //.map(s-> this.toResponse(s)).toList();
     }
 
-    public Optional<StudentResponse> getById(Long id) {
-        return studentRepository.findById(id).map(this::toResponse);
+    public StudentResponse getById(Long id) {
+        return studentRepository.findById(id).map(this::toResponse).orElseThrow(()-> new NotFoundException("Không tìm thấy người dùng"));
     }
 
     public StudentResponse create(StudentRequest request) {
         boolean sameEmail = studentRepository.findAll().stream().anyMatch(s -> s.email().equals(request.email()));
-        if(sameEmail)  throw new IllegalArgumentException("Email đã tồn tại");
+        if(sameEmail)  throw new DuplicateEmailException("Email đã tồn tại");
         Student newStudent = new Student(null, request.fullName(), request.email(), request.birthDate(), LocalDateTime.now());
         Student saved = studentRepository.save(newStudent);
         return  toResponse(saved);
     }
 
-    public Optional<StudentResponse> update(Long id, StudentRequest request) {
-        Optional<Student> student = studentRepository.findById(id);
-        if (student.isPresent()) {
-            Student newStudent = new Student(id, request.fullName(), request.email(), request.birthDate(), student.get().created_at());
-            Student saved = studentRepository.save(newStudent);
-            return Optional.of(toResponse(saved));
-        }
-        return Optional.empty();
+    public StudentResponse update(Long id, StudentRequest request) {
+        Student student = studentRepository.findById(id).orElseThrow(()-> new NotFoundException("Không tìm thấy người dùng"));
+        Student newStudent = new Student(id, request.fullName(), request.email(), request.birthDate(), student.created_at());
+        Student saved = studentRepository.save(newStudent);
+        return toResponse(saved);
     }
 
 
-    public boolean deleteById(Long id) {
-        return studentRepository.deleteById(id);
+    public void deleteById(Long id) {
+        boolean isDeleted = studentRepository.deleteById(id);
+        if(!isDeleted) throw new NotFoundException("Không tìm thấy người dùng");
     }
 }
