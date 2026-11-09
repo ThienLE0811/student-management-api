@@ -3,6 +3,7 @@ package com.thienlv.student_api.controller;
 import com.thienlv.student_api.dto.StudentRequest;
 import com.thienlv.student_api.dto.StudentResponse;
 import com.thienlv.student_api.service.StudentService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -31,7 +32,7 @@ public class StudentController {
     }
 
     @PostMapping("/api/students")
-    public ResponseEntity<StudentResponse > createStudent(@RequestBody StudentRequest request) {
+    public ResponseEntity<StudentResponse > createStudent(@Valid @RequestBody StudentRequest request) {
         StudentResponse response = studentService.create(request);
 
         URI location = ServletUriComponentsBuilder
@@ -43,7 +44,7 @@ public class StudentController {
     }
 
     @PutMapping("/api/students/{id}")
-    public ResponseEntity<StudentResponse> updateStudent(@PathVariable Long id, @RequestBody StudentRequest request) {
+    public ResponseEntity<StudentResponse> updateStudent(@PathVariable Long id, @Valid @RequestBody StudentRequest request) {
         Optional<StudentResponse> response = studentService.update(id, request);
         return response.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
 
