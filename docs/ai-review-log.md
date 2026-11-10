@@ -10,3 +10,4 @@ và thêm 1 dòng link ở danh sách dưới đây.
 
 - [Buổi 9 — Validation](ai-review-log/buoi-09.md)
 - [Buổi 12 — Test Controller với MockMvc](ai-review-log/buoi-12.md)
+- [Buổi 14 — PostgreSQL + Spring Data JPA (setup)](ai-review-log/buoi-14.md)

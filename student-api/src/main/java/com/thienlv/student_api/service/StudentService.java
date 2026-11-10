@@ -34,10 +34,9 @@ public class StudentService {
         LocalDate today = LocalDate.now();
 
         return students.stream()
-                .filter(student -> name == null || Objects.equals(student.full_name(), name))
+                .filter(student -> name == null || Objects.equals(student.getFull_name(), name))
                 .filter(student -> {
-                    // Lấy ngày sinh (giả sử record là student.dob() hoặc class là student.getDob())
-                    LocalDate dob = student.birth_date();
+                    LocalDate dob = student.getBirth_date();
                     if (dob == null) return false;
                     // Tính số tuổi chính xác tới ngày hôm nay
                     int age = Period.between(dob, today).getYears();
@@ -55,25 +54,25 @@ public class StudentService {
     }
 
     public StudentResponse create(StudentRequest request) {
-        boolean sameEmail = studentRepository.findAll().stream().anyMatch(s -> s.email().equals(request.email()));
+        boolean sameEmail = studentRepository.findAll().stream().anyMatch(s -> s.getEmail().equals(request.email()));
         if(sameEmail)  throw new DuplicateEmailException("Email đã tồn tại");
         Student newStudent = new Student(null, request.fullName(), request.email(), request.birthDate(), LocalDateTime.now());
         Student saved = studentRepository.save(newStudent);
-        log.info("Đã tạo sinh viên id={}", saved.id());
+        log.info("Đã tạo sinh viên id={}", saved.getId());
         return studentMapper.toResponse(saved);
     }
 
     public StudentResponse update(Long id, StudentRequest request) {
         Student student = studentRepository.findById(id).orElseThrow(()-> new NotFoundException("Không tìm thấy người dùng"));
-        Student newStudent = new Student(id, request.fullName(), request.email(), request.birthDate(), student.created_at());
+        Student newStudent = new Student(id, request.fullName(), request.email(), request.birthDate(), student.getCreated_at());
         Student saved = studentRepository.save(newStudent);
         return studentMapper.toResponse(saved);
     }
 
 
     public void deleteById(Long id) {
-        boolean isDeleted = studentRepository.deleteById(id);
-        if(!isDeleted) throw new NotFoundException("Không tìm thấy người dùng");
+        if(!studentRepository.existsById(id)) throw new NotFoundException("Không tìm thấy người dùng");
+        studentRepository.deleteById(id);
         log.info("Đã xóa sinh viên id={}", id);
     }
 }

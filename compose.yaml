@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: student-api-postgres
+    environment:
+      POSTGRES_DB: student_api
+      POSTGRES_USER: student_api
+      POSTGRES_PASSWORD: student_api
+    ports:
+      - "5433:5432"
+    volumes:
+      - student-api-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  student-api-postgres-data:
