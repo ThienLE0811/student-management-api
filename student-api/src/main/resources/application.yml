@@ -5,3 +5,9 @@ spring:
   application:
     name: student-api
 
+app:
+  environment-label: "default (chua chon profile)"
+
+logging:
+  level:
+    root: INFO

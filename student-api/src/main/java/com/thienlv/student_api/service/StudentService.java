@@ -5,7 +5,10 @@ import com.thienlv.student_api.dto.StudentResponse;
 import com.thienlv.student_api.entity.Student;
 import com.thienlv.student_api.exception.DuplicateEmailException;
 import com.thienlv.student_api.exception.NotFoundException;
+import com.thienlv.student_api.mapper.StudentMapper;
 import com.thienlv.student_api.repository.StudentRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -16,21 +19,14 @@ import java.util.Objects;
 
 @Service
 public class StudentService {
-    private final StudentRepository studentRepository;
-    public StudentService(StudentRepository studentRepository){
-        this.studentRepository = studentRepository;
-    }
+    private static final Logger log = LoggerFactory.getLogger(StudentService.class);
 
-    private StudentResponse toResponse(Student student) {
-        int age = Period.between(student.birth_date(), LocalDate.now()).getYears();
-        return new StudentResponse(
-                student.id(),
-                student.full_name(),
-                student.email(),
-                student.birth_date(),
-                age,
-                student.created_at()
-        );
+    private final StudentRepository studentRepository;
+    private final StudentMapper studentMapper;
+
+    public StudentService(StudentRepository studentRepository, StudentMapper studentMapper){
+        this.studentRepository = studentRepository;
+        this.studentMapper = studentMapper;
     }
 
     public List<StudentResponse> getAll(String name, Integer minAge, Integer maxAge) {
@@ -51,12 +47,11 @@ public class StudentService {
                     boolean matchMax = (maxAge == null || age <= maxAge);
                     return matchMin && matchMax;
                 })
-                .map(this::toResponse).toList();
-                //.map(s-> this.toResponse(s)).toList();
+                .map(studentMapper::toResponse).toList();
     }
 
     public StudentResponse getById(Long id) {
-        return studentRepository.findById(id).map(this::toResponse).orElseThrow(()-> new NotFoundException("Không tìm thấy người dùng"));
+        return studentRepository.findById(id).map(studentMapper::toResponse).orElseThrow(()-> new NotFoundException("Không tìm thấy người dùng"));
     }
 
     public StudentResponse create(StudentRequest request) {
@@ -64,19 +59,21 @@ public class StudentService {
         if(sameEmail)  throw new DuplicateEmailException("Email đã tồn tại");
         Student newStudent = new Student(null, request.fullName(), request.email(), request.birthDate(), LocalDateTime.now());
         Student saved = studentRepository.save(newStudent);
-        return  toResponse(saved);
+        log.info("Đã tạo sinh viên id={}", saved.id());
+        return studentMapper.toResponse(saved);
     }
 
     public StudentResponse update(Long id, StudentRequest request) {
         Student student = studentRepository.findById(id).orElseThrow(()-> new NotFoundException("Không tìm thấy người dùng"));
         Student newStudent = new Student(id, request.fullName(), request.email(), request.birthDate(), student.created_at());
         Student saved = studentRepository.save(newStudent);
-        return toResponse(saved);
+        return studentMapper.toResponse(saved);
     }
 
 
     public void deleteById(Long id) {
         boolean isDeleted = studentRepository.deleteById(id);
         if(!isDeleted) throw new NotFoundException("Không tìm thấy người dùng");
+        log.info("Đã xóa sinh viên id={}", id);
     }
 }

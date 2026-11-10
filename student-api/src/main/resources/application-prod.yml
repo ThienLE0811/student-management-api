@@ -1,0 +1,6 @@
+app:
+  environment-label: "PROD - du lieu that, han che log"
+
+logging:
+  level:
+    com.thienlv.student_api: INFO

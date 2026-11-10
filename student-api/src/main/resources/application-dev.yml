@@ -1,0 +1,6 @@
+app:
+  environment-label: "DEV - du lieu test, log chi tiet"
+
+logging:
+  level:
+    com.thienlv.student_api: DEBUG
