@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -39,32 +40,33 @@ public class ClassService {
 
     public ClassResponse create(ClassRequest request) {
         String name = request.name().trim();
-        boolean sameName = classRepository.findAll().stream()
-                .anyMatch(c -> c.name().trim().equalsIgnoreCase(name));
-        if (sameName) throw new DuplicateClassNameException("Tên lớp đã tồn tại");
+        if (classRepository.existsByNameIgnoreCase(name)) {
+            throw new DuplicateClassNameException("Tên lớp đã tồn tại");
+        }
 
-        SchoolClass newClass = new SchoolClass(null, name);
+        SchoolClass newClass = new SchoolClass(null, name, LocalDateTime.now());
         SchoolClass saved = classRepository.save(newClass);
-        log.info("Đã tạo lớp học id={}", saved.id());
+        log.info("Đã tạo lớp học id={}", saved.getId());
         return classMapper.toResponse(saved);
     }
 
     public ClassResponse update(Long id, ClassRequest request) {
-        classRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+        SchoolClass existing = classRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
 
         String name = request.name().trim();
-        boolean sameName = classRepository.findAll().stream()
-                .anyMatch(c -> !c.id().equals(id) && c.name().trim().equalsIgnoreCase(name));
-        if (sameName) throw new DuplicateClassNameException("Tên lớp đã tồn tại");
+        if (classRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
+            throw new DuplicateClassNameException("Tên lớp đã tồn tại");
+        }
 
-        SchoolClass updated = new SchoolClass(id, name);
-        SchoolClass saved = classRepository.save(updated);
+        existing.setName(name);
+        SchoolClass saved = classRepository.save(existing);
         return classMapper.toResponse(saved);
     }
 
     public void deleteById(Long id) {
-        boolean isDeleted = classRepository.deleteById(id);
-        if (!isDeleted) throw new NotFoundException("Không tìm thấy lớp học");
+        if (!classRepository.existsById(id)) throw new NotFoundException("Không tìm thấy lớp học");
+        classRepository.deleteById(id);
         log.info("Đã xóa lớp học id={}", id);
     }
 }

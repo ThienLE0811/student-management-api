@@ -15,6 +15,7 @@ public interface StudentMapper {
     @Mapping(target = "birthDate", source = "birth_date")
     @Mapping(target = "createdAt", source = "created_at")
     @Mapping(target = "age", expression = "java(calculateAge(student.getBirth_date()))")
+    @Mapping(target = "classId", source = "schoolClass.id")
     StudentResponse toResponse(Student student);
 
     default int calculateAge(LocalDate birthDate) {

@@ -15,4 +15,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     @Query("SELECT s FROM Student s WHERE s.birth_date BETWEEN :from AND :to")
     List<Student> findByBirthDateBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Query("SELECT s FROM Student s WHERE s.schoolClass.id = :classId")
+    List<Student> findBySchoolClassId(@Param("classId") Long classId);
 }

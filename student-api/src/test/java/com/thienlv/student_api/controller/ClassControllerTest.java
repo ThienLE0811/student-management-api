@@ -2,9 +2,11 @@ package com.thienlv.student_api.controller;
 
 import com.thienlv.student_api.dto.ClassRequest;
 import com.thienlv.student_api.dto.ClassResponse;
+import com.thienlv.student_api.dto.StudentResponse;
 import com.thienlv.student_api.exception.DuplicateClassNameException;
 import com.thienlv.student_api.exception.NotFoundException;
 import com.thienlv.student_api.service.ClassService;
+import com.thienlv.student_api.service.StudentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -13,6 +15,8 @@ import tools.jackson.databind.ObjectMapper;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -35,6 +39,9 @@ class ClassControllerTest {
 
     @MockitoBean
     private ClassService classService;
+
+    @MockitoBean
+    private StudentService studentService;
 
     private ClassResponse sampleResponse(long id) {
         return new ClassResponse(id, "CNTT-K1");
@@ -171,6 +178,26 @@ class ClassControllerTest {
                 .when(classService).deleteById(99L);
 
         mockMvc.perform(delete("/api/classes/{id}", 99L))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getStudentsByClass_tra_ve_danh_sach_sinh_vien_cua_lop() throws Exception {
+        StudentResponse student = new StudentResponse(1L, "Nguyen Van A", "a@gmail.com",
+                LocalDate.of(2004, 3, 15), 21, LocalDateTime.of(2024, 1, 10, 8, 30), 1L);
+        given(studentService.getByClassId(1L)).willReturn(List.of(student));
+
+        mockMvc.perform(get("/api/classes/{id}/students", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].classId").value(1));
+    }
+
+    @Test
+    void getStudentsByClass_tra_ve_404_khi_khong_tim_thay_lop() throws Exception {
+        given(studentService.getByClassId(99L)).willThrow(new NotFoundException("Khong tim thay lop hoc"));
+
+        mockMvc.perform(get("/api/classes/{id}/students", 99L))
                 .andExpect(status().isNotFound());
     }
 }

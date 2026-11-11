@@ -2,7 +2,9 @@ package com.thienlv.student_api.controller;
 
 import com.thienlv.student_api.dto.ClassRequest;
 import com.thienlv.student_api.dto.ClassResponse;
+import com.thienlv.student_api.dto.StudentResponse;
 import com.thienlv.student_api.service.ClassService;
+import com.thienlv.student_api.service.StudentService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,9 +16,11 @@ import java.util.List;
 @RestController
 public class ClassController {
     private final ClassService classService;
+    private final StudentService studentService;
 
-    public ClassController(ClassService classService) {
+    public ClassController(ClassService classService, StudentService studentService) {
         this.classService = classService;
+        this.studentService = studentService;
     }
 
     @GetMapping("/api/classes")
@@ -27,6 +31,11 @@ public class ClassController {
     @GetMapping("/api/classes/{id}")
     public ClassResponse getDetailClass(@PathVariable Long id) {
         return classService.getById(id);
+    }
+
+    @GetMapping("/api/classes/{id}/students")
+    public List<StudentResponse> getStudentsByClass(@PathVariable Long id) {
+        return studentService.getByClassId(id);
     }
 
     @PostMapping("/api/classes")

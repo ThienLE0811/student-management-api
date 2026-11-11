@@ -10,12 +10,15 @@ Dự án học tập cá nhân (self-study) về Spring Boot. File này là "rul
   và `@MockBean` (đã bị gỡ, dùng `@MockitoBean`). Luôn kiểm tra lại API theo
   đúng version 4, không suy đoán theo quán tính Spring Boot 3.
 - Module chính: `student-api/` (package gốc `com.thienlv.student_api`).
-- **Chưa dùng Spring Data JPA/DB thật trong app** — `pom.xml` hiện chỉ có
-  `spring-boot-starter-webmvc` + `validation`. Tầng `repository/` là
-  **in-memory, lưu bằng `Map`** (xem `StudentRepository`: `LinkedHashMap`
-  + `AtomicLong` sinh id), không phải `JpaRepository`. Schema SQL ở `sql/`
-  là track học riêng ("DB song song"), chưa nối với app — không coi đó là
-  nguồn sự thật cho code Java trừ khi được yêu cầu nối DB thật.
+- **Đã dùng Spring Data JPA + PostgreSQL thật** (từ buổi 14/15) — `pom.xml`
+  có `spring-boot-starter-data-jpa` + driver `postgresql`. Toàn bộ
+  `repository/` là `JpaRepository` (không còn in-memory `Map` nào). DB dev
+  chạy qua `compose.yaml` (container `student-api-postgres`, cổng 5433),
+  profile `dev` dùng `hibernate.ddl-auto: update` — Hibernate tự sinh/migrate
+  schema từ entity Java. Entity Java là **nguồn sự thật cho schema**, không
+  phải file trong `sql/` (đó vẫn là track học riêng, "DB song song", không
+  tự đồng bộ với schema thật — nếu đổi entity thì `sql/` có thể lệch, không
+  tự coi là tài liệu tham chiếu trừ khi được yêu cầu đối chiếu).
 - Lombok + MapStruct cho mapping entity ↔ DTO.
 
 ## Kiến trúc 3 tầng
@@ -27,8 +30,10 @@ Luôn giữ đúng luồng: **Controller → Service → Repository → Database
 - `service/`: chứa toàn bộ business logic (kiểm tra trùng email, tính tuổi,
   ném exception nghiệp vụ...). Không trả về Entity ra ngoài tầng Controller —
   luôn map sang DTO response trước khi return.
-- `repository/`: chỉ thao tác dữ liệu (hiện là in-memory `Map`, theo đúng
-  pattern của `StudentRepository`). Không chứa business logic.
+- `repository/`: chỉ thao tác dữ liệu, `extends JpaRepository` (xem
+  `StudentRepository`, `ClassRepository`). Dùng derived query method hoặc
+  `@Query` (JPQL) khi tên field không theo camelCase chuẩn Java (vd:
+  `full_name`, `birth_date`). Không chứa business logic.
 - `entity/`: ánh xạ bảng DB.
 - `dto/`: Request/Response record, có thể gắn validation annotation.
 - `mapper/`: MapStruct interface, `@Mapper(componentModel = "spring")`.
@@ -116,6 +121,12 @@ Toàn bộ lỗi trả về client đi qua `GlobalExceptionHandler`
 
 - Không tự ý thêm dependency vào `pom.xml` nếu không được yêu cầu rõ ràng.
 - Không đổi schema DB nếu không được yêu cầu.
+- Thêm cột `NOT NULL` vào bảng đã có dữ liệu: `ddl-auto: update` sẽ chạy
+  `ALTER TABLE ... ADD COLUMN ... NOT NULL` trực tiếp và **fail nếu bảng dev
+  đang có dòng cũ** (Postgres từ chối vì giá trị null). Trước khi thêm field
+  bắt buộc (`nullable = false`) vào entity đã có dữ liệu, phải tự dọn/backfill
+  dữ liệu dev trước (vd: `TRUNCATE` bảng nếu là data test, không phải data
+  cần giữ) — không phải lỗi code, là bước migrate dữ liệu cần làm thủ công.
 - Giữ thay đổi tối thiểu, đúng phạm vi được giao — không refactor lan man.
 - Sau khi AI sửa/viết code, luôn ghi lại vào `docs/ai-review-log.md`: AI làm
   gì, không làm gì, người học tự làm gì — theo đúng format các buổi trước.

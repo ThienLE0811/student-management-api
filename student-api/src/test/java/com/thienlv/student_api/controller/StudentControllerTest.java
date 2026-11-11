@@ -40,7 +40,7 @@ class StudentControllerTest {
 
     private StudentResponse sampleResponse(long id) {
         return new StudentResponse(id, "Nguyen Van A", "a@gmail.com",
-                LocalDate.of(2004, 3, 15), 21, LocalDateTime.of(2024, 1, 10, 8, 30));
+                LocalDate.of(2004, 3, 15), 21, LocalDateTime.of(2024, 1, 10, 8, 30), 1L);
     }
 
     @Test
@@ -89,7 +89,7 @@ class StudentControllerTest {
 
     @Test
     void createStudent_tra_ve_201_va_location_header() throws Exception {
-        StudentRequest request = new StudentRequest("Nguyen Van A", "a@gmail.com", LocalDate.of(2004, 3, 15));
+        StudentRequest request = new StudentRequest("Nguyen Van A", "a@gmail.com", LocalDate.of(2004, 3, 15), 1L);
         given(studentService.create(any(StudentRequest.class))).willReturn(sampleResponse(1L));
 
         mockMvc.perform(post("/api/students")
@@ -103,7 +103,7 @@ class StudentControllerTest {
     @Test
     void createStudent_tra_ve_400_khi_validation_fail() throws Exception {
         // fullName blank, email sai dinh dang -> vi pham @NotBlank/@Email
-        StudentRequest invalid = new StudentRequest("", "khong-phai-email", LocalDate.of(2004, 3, 15));
+        StudentRequest invalid = new StudentRequest("", "khong-phai-email", LocalDate.of(2004, 3, 15), 1L);
 
         mockMvc.perform(post("/api/students")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -117,7 +117,7 @@ class StudentControllerTest {
     void createStudent_tra_ve_400_khi_ten_qua_dai() throws Exception {
         // fullName > 100 ky tu -> vi pham @Size(max = 100)
         String tenQuaDai = "A".repeat(101);
-        StudentRequest invalid = new StudentRequest(tenQuaDai, "a@gmail.com", LocalDate.of(2004, 3, 15));
+        StudentRequest invalid = new StudentRequest(tenQuaDai, "a@gmail.com", LocalDate.of(2004, 3, 15), 1L);
 
         mockMvc.perform(post("/api/students")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -129,7 +129,7 @@ class StudentControllerTest {
     @Test
     void createStudent_tra_ve_400_khi_ngay_sinh_trong_tuong_lai() throws Exception {
         // birthDate trong tuong lai -> vi pham @Past
-        StudentRequest invalid = new StudentRequest("Nguyen Van A", "a@gmail.com", LocalDate.now().plusDays(1));
+        StudentRequest invalid = new StudentRequest("Nguyen Van A", "a@gmail.com", LocalDate.now().plusDays(1), 1L);
 
         mockMvc.perform(post("/api/students")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -139,12 +139,24 @@ class StudentControllerTest {
     }
 
     @Test
+    void createStudent_tra_ve_400_khi_thieu_classId() throws Exception {
+        // classId null -> vi pham @NotNull (sinh vien bat buoc thuoc 1 lop)
+        StudentRequest invalid = new StudentRequest("Nguyen Van A", "a@gmail.com", LocalDate.of(2004, 3, 15), null);
+
+        mockMvc.perform(post("/api/students")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.classId").exists());
+    }
+
+    @Test
     void createStudent_sai_dinh_dang_ngay_sinh_hien_tai_tra_ve_500() throws Exception {
         // Luu y: day la hanh vi HIEN TAI (bug), khong phai hanh vi mong muon.
         // Loi parse JSON (HttpMessageNotReadableException) khong khop handler nao
         // ngoai @ExceptionHandler(Exception.class) -> roi vao nhanh 500 thay vi 400.
         String jsonSaiDinhDang = """
-                {"fullName":"Nguyen Van A","email":"a@gmail.com","birthDate":"khong-phai-ngay"}
+                {"fullName":"Nguyen Van A","email":"a@gmail.com","birthDate":"khong-phai-ngay","classId":1}
                 """;
 
         mockMvc.perform(post("/api/students")
@@ -155,7 +167,7 @@ class StudentControllerTest {
 
     @Test
     void createStudent_tra_ve_409_khi_trung_email() throws Exception {
-        StudentRequest request = new StudentRequest("Nguyen Van A", "a@gmail.com", LocalDate.of(2004, 3, 15));
+        StudentRequest request = new StudentRequest("Nguyen Van A", "a@gmail.com", LocalDate.of(2004, 3, 15), 1L);
         given(studentService.create(any(StudentRequest.class)))
                 .willThrow(new DuplicateEmailException("Email da ton tai"));
 
@@ -168,10 +180,10 @@ class StudentControllerTest {
 
     @Test
     void updateStudent_tra_ve_200_voi_du_lieu_moi() throws Exception {
-        StudentRequest request = new StudentRequest("Nguyen Van B", "b@gmail.com", LocalDate.of(2004, 3, 15));
+        StudentRequest request = new StudentRequest("Nguyen Van B", "b@gmail.com", LocalDate.of(2004, 3, 15), 1L);
         given(studentService.update(anyLong(), any(StudentRequest.class)))
                 .willReturn(new StudentResponse(1L, "Nguyen Van B", "b@gmail.com",
-                        LocalDate.of(2004, 3, 15), 21, LocalDateTime.of(2024, 1, 10, 8, 30)));
+                        LocalDate.of(2004, 3, 15), 21, LocalDateTime.of(2024, 1, 10, 8, 30), 1L));
 
         mockMvc.perform(put("/api/students/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -182,7 +194,7 @@ class StudentControllerTest {
 
     @Test
     void updateStudent_tra_ve_404_khi_khong_tim_thay() throws Exception {
-        StudentRequest request = new StudentRequest("Nguyen Van B", "b@gmail.com", LocalDate.of(2004, 3, 15));
+        StudentRequest request = new StudentRequest("Nguyen Van B", "b@gmail.com", LocalDate.of(2004, 3, 15), 1L);
         given(studentService.update(org.mockito.ArgumentMatchers.eq(99L), any(StudentRequest.class)))
                 .willThrow(new NotFoundException("Khong tim thay nguoi dung"));
 

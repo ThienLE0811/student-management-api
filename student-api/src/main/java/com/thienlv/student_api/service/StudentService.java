@@ -2,10 +2,12 @@ package com.thienlv.student_api.service;
 
 import com.thienlv.student_api.dto.StudentRequest;
 import com.thienlv.student_api.dto.StudentResponse;
+import com.thienlv.student_api.entity.SchoolClass;
 import com.thienlv.student_api.entity.Student;
 import com.thienlv.student_api.exception.DuplicateEmailException;
 import com.thienlv.student_api.exception.NotFoundException;
 import com.thienlv.student_api.mapper.StudentMapper;
+import com.thienlv.student_api.repository.ClassRepository;
 import com.thienlv.student_api.repository.StudentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,10 +25,12 @@ public class StudentService {
 
     private final StudentRepository studentRepository;
     private final StudentMapper studentMapper;
+    private final ClassRepository classRepository;
 
-    public StudentService(StudentRepository studentRepository, StudentMapper studentMapper){
+    public StudentService(StudentRepository studentRepository, StudentMapper studentMapper, ClassRepository classRepository){
         this.studentRepository = studentRepository;
         this.studentMapper = studentMapper;
+        this.classRepository = classRepository;
     }
 
     public List<StudentResponse> getAll(String name, Integer minAge, Integer maxAge) {
@@ -56,7 +60,11 @@ public class StudentService {
     public StudentResponse create(StudentRequest request) {
         boolean sameEmail = studentRepository.findAll().stream().anyMatch(s -> s.getEmail().equals(request.email()));
         if(sameEmail)  throw new DuplicateEmailException("Email đã tồn tại");
-        Student newStudent = new Student(null, request.fullName(), request.email(), request.birthDate(), LocalDateTime.now());
+
+        SchoolClass schoolClass = classRepository.findById(request.classId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+
+        Student newStudent = new Student(null, request.fullName(), request.email(), request.birthDate(), LocalDateTime.now(), schoolClass);
         Student saved = studentRepository.save(newStudent);
         log.info("Đã tạo sinh viên id={}", saved.getId());
         return studentMapper.toResponse(saved);
@@ -64,7 +72,11 @@ public class StudentService {
 
     public StudentResponse update(Long id, StudentRequest request) {
         Student student = studentRepository.findById(id).orElseThrow(()-> new NotFoundException("Không tìm thấy người dùng"));
-        Student newStudent = new Student(id, request.fullName(), request.email(), request.birthDate(), student.getCreated_at());
+
+        SchoolClass schoolClass = classRepository.findById(request.classId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+
+        Student newStudent = new Student(id, request.fullName(), request.email(), request.birthDate(), student.getCreated_at(), schoolClass);
         Student saved = studentRepository.save(newStudent);
         return studentMapper.toResponse(saved);
     }
@@ -74,5 +86,12 @@ public class StudentService {
         if(!studentRepository.existsById(id)) throw new NotFoundException("Không tìm thấy người dùng");
         studentRepository.deleteById(id);
         log.info("Đã xóa sinh viên id={}", id);
+    }
+
+    public List<StudentResponse> getByClassId(Long classId) {
+        if (!classRepository.existsById(classId)) throw new NotFoundException("Không tìm thấy lớp học");
+        return studentRepository.findBySchoolClassId(classId).stream()
+                .map(studentMapper::toResponse)
+                .toList();
     }
 }
