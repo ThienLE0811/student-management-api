@@ -220,4 +220,23 @@ class StudentControllerTest {
         mockMvc.perform(delete("/api/students/{id}", 99L))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void getStudentsWithoutCourse_tra_ve_200_voi_danh_sach() throws Exception {
+        given(studentService.getWithoutCourse()).willReturn(List.of(sampleResponse(1L), sampleResponse(2L)));
+
+        mockMvc.perform(get("/api/students/without-course"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(1));
+    }
+
+    @Test
+    void getStudentsWithoutCourse_tra_ve_danh_sach_rong_khi_ai_cung_da_dang_ky() throws Exception {
+        given(studentService.getWithoutCourse()).willReturn(List.of());
+
+        mockMvc.perform(get("/api/students/without-course"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
 }

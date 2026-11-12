@@ -94,4 +94,10 @@ public class StudentService {
                 .map(studentMapper::toResponse)
                 .toList();
     }
+
+    public List<StudentResponse> getWithoutCourse() {
+        return studentRepository.findStudentsWithoutCourse().stream()
+                .map(studentMapper::toResponse)
+                .toList();
+    }
 }

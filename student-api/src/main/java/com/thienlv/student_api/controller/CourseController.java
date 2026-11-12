@@ -1,7 +1,10 @@
 package com.thienlv.student_api.controller;
 
+import com.thienlv.student_api.dto.CourseAverageScoreResponse;
 import com.thienlv.student_api.dto.CourseRequest;
 import com.thienlv.student_api.dto.CourseResponse;
+import com.thienlv.student_api.dto.ScoreVsAverageResponse;
+import com.thienlv.student_api.dto.TopScoreResponse;
 import com.thienlv.student_api.service.CourseService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +30,21 @@ public class CourseController {
     @GetMapping("/api/courses/{id}")
     public CourseResponse getDetailCourse(@PathVariable Long id) {
         return courseService.getById(id);
+    }
+
+    @GetMapping("/api/courses/{id}/average-score")
+    public CourseAverageScoreResponse getAverageScore(@PathVariable Long id) {
+        return courseService.getAverageScore(id);
+    }
+
+    @GetMapping("/api/courses/{id}/top-scores")
+    public List<TopScoreResponse> getTopScores(@PathVariable Long id) {
+        return courseService.getTopScores(id);
+    }
+
+    @GetMapping("/api/courses/{id}/score-vs-average")
+    public List<ScoreVsAverageResponse> getScoreVsAverage(@PathVariable Long id) {
+        return courseService.getScoreVsAverage(id);
     }
 
     @PostMapping("/api/courses")

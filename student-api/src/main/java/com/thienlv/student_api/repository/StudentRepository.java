@@ -18,4 +18,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     @Query("SELECT s FROM Student s WHERE s.schoolClass.id = :classId")
     List<Student> findBySchoolClassId(@Param("classId") Long classId);
+
+    @Query("SELECT s FROM Student s WHERE NOT EXISTS (SELECT 1 FROM Enrollment e WHERE e.student = s)")
+    List<Student> findStudentsWithoutCourse();
 }

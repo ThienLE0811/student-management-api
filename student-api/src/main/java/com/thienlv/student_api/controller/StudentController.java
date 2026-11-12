@@ -29,6 +29,11 @@ public class StudentController {
         return studentService.getById(id);
     }
 
+    @GetMapping("/api/students/without-course")
+    public List<StudentResponse> getStudentsWithoutCourse() {
+        return studentService.getWithoutCourse();
+    }
+
     @PostMapping("/api/students")
     public ResponseEntity<StudentResponse > createStudent(@Valid @RequestBody StudentRequest request) {
         StudentResponse response = studentService.create(request);

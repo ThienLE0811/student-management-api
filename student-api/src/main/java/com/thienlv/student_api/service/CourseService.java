@@ -1,7 +1,10 @@
 package com.thienlv.student_api.service;
 
+import com.thienlv.student_api.dto.CourseAverageScoreResponse;
 import com.thienlv.student_api.dto.CourseRequest;
 import com.thienlv.student_api.dto.CourseResponse;
+import com.thienlv.student_api.dto.ScoreVsAverageResponse;
+import com.thienlv.student_api.dto.TopScoreResponse;
 import com.thienlv.student_api.entity.Course;
 import com.thienlv.student_api.exception.DuplicateCourseNameException;
 import com.thienlv.student_api.exception.NotFoundException;
@@ -62,6 +65,25 @@ public class CourseService {
         existing.setName(name);
         Course saved = courseRepository.save(existing);
         return courseMapper.toResponse(saved);
+    }
+
+    public CourseAverageScoreResponse getAverageScore(Long id) {
+        return courseRepository.findAverageScoreByCourseId(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy khóa học"));
+    }
+
+    public List<TopScoreResponse> getTopScores(Long id) {
+        if (!courseRepository.existsById(id)) throw new NotFoundException("Không tìm thấy khóa học");
+        return courseRepository.findTop3ScoresByCourseId(id).stream()
+                .map(p -> new TopScoreResponse(p.getStudentId(), p.getStudentName(), p.getScore(), p.getRankNo()))
+                .toList();
+    }
+
+    public List<ScoreVsAverageResponse> getScoreVsAverage(Long id) {
+        if (!courseRepository.existsById(id)) throw new NotFoundException("Không tìm thấy khóa học");
+        return courseRepository.findScoreVsAverageByCourseId(id).stream()
+                .map(p -> new ScoreVsAverageResponse(p.getStudentId(), p.getStudentName(), p.getScore(), p.getAvgScore(), p.getDiff()))
+                .toList();
     }
 
     public void deleteById(Long id) {
