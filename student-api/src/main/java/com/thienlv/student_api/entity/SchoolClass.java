@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -33,12 +34,24 @@ public class SchoolClass {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime created_at;
 
+    @Column(name = "capacity", nullable = false)
+    private Integer capacity;
+
+    @Column(name = "enrolled_count", nullable = false)
+    private Integer enrolledCount;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     @OneToMany(mappedBy = "schoolClass", fetch = FetchType.LAZY)
     private List<Student> students = new ArrayList<>();
 
-    public SchoolClass(Long id, String name, LocalDateTime created_at) {
+    public SchoolClass(Long id, String name, LocalDateTime created_at, Integer capacity, Integer enrolledCount) {
         this.id = id;
         this.name = name;
         this.created_at = created_at;
+        this.capacity = capacity;
+        this.enrolledCount = enrolledCount;
     }
 }

@@ -54,7 +54,7 @@ class StudentRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        schoolClass = classRepository.save(new SchoolClass(null, "10A1", LocalDateTime.now()));
+        schoolClass = classRepository.save(new SchoolClass(null, "10A1", LocalDateTime.now(), 30, 0));
     }
 
     private Student newStudent(String fullName, String email, LocalDate birthDate) {
@@ -96,7 +96,7 @@ class StudentRepositoryTest {
 
     @Test
     void findBySchoolClassId_chi_tra_ve_sinh_vien_cua_dung_lop() {
-        SchoolClass otherClass = classRepository.save(new SchoolClass(null, "10A2", LocalDateTime.now()));
+        SchoolClass otherClass = classRepository.save(new SchoolClass(null, "10A2", LocalDateTime.now(), 30, 0));
         newStudent("A", "a@test.com", LocalDate.of(2005, 1, 1));
         studentRepository.save(new Student(null, "D", "d@test.com", LocalDate.of(2005, 1, 1), LocalDateTime.now(), otherClass));
 

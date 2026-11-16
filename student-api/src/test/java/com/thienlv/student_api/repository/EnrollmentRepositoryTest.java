@@ -54,7 +54,7 @@ class EnrollmentRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        SchoolClass schoolClass = classRepository.save(new SchoolClass(null, "10A1", LocalDateTime.now()));
+        SchoolClass schoolClass = classRepository.save(new SchoolClass(null, "10A1", LocalDateTime.now(), 30, 0));
         student = studentRepository.save(new Student(null, "Nguyen Van A", "a@test.com",
                 LocalDate.of(2005, 1, 1), LocalDateTime.now(), schoolClass));
         course = courseRepository.save(new Course(null, "Toan", LocalDateTime.now()));

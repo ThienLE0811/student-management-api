@@ -1,10 +1,13 @@
 package com.thienlv.student_api.controller;
 
+import com.thienlv.student_api.dto.AddStudentToClassRequest;
 import com.thienlv.student_api.dto.ClassRequest;
 import com.thienlv.student_api.dto.ClassResponse;
 import com.thienlv.student_api.dto.StudentResponse;
+import com.thienlv.student_api.exception.ClassFullException;
 import com.thienlv.student_api.exception.DuplicateClassNameException;
 import com.thienlv.student_api.exception.NotFoundException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import com.thienlv.student_api.service.ClassService;
 import com.thienlv.student_api.service.StudentService;
 import org.junit.jupiter.api.Test;
@@ -44,7 +47,7 @@ class ClassControllerTest {
     private StudentService studentService;
 
     private ClassResponse sampleResponse(long id) {
-        return new ClassResponse(id, "CNTT-K1", List.of());
+        return new ClassResponse(id, "CNTT-K1", 30, 0, List.of());
     }
 
     @Test
@@ -79,7 +82,7 @@ class ClassControllerTest {
 
     @Test
     void createClass_tra_ve_201_va_location_header() throws Exception {
-        ClassRequest request = new ClassRequest("CNTT-K1");
+        ClassRequest request = new ClassRequest("CNTT-K1", 30);
         given(classService.create(any(ClassRequest.class))).willReturn(sampleResponse(1L));
 
         mockMvc.perform(post("/api/classes")
@@ -92,7 +95,7 @@ class ClassControllerTest {
 
     @Test
     void createClass_tra_ve_400_khi_ten_rong() throws Exception {
-        ClassRequest invalid = new ClassRequest("");
+        ClassRequest invalid = new ClassRequest("", 30);
 
         mockMvc.perform(post("/api/classes")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -104,7 +107,7 @@ class ClassControllerTest {
     @Test
     void createClass_tra_ve_400_khi_ten_qua_dai() throws Exception {
         String tenQuaDai = "A".repeat(101);
-        ClassRequest invalid = new ClassRequest(tenQuaDai);
+        ClassRequest invalid = new ClassRequest(tenQuaDai, 30);
 
         mockMvc.perform(post("/api/classes")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -115,7 +118,7 @@ class ClassControllerTest {
 
     @Test
     void createClass_tra_ve_409_khi_trung_ten() throws Exception {
-        ClassRequest request = new ClassRequest("CNTT-K1");
+        ClassRequest request = new ClassRequest("CNTT-K1", 30);
         given(classService.create(any(ClassRequest.class)))
                 .willThrow(new DuplicateClassNameException("Ten lop da ton tai"));
 
@@ -128,7 +131,7 @@ class ClassControllerTest {
 
     @Test
     void updateClass_tra_ve_409_khi_trung_ten_lop_khac() throws Exception {
-        ClassRequest request = new ClassRequest("CNTT-K2");
+        ClassRequest request = new ClassRequest("CNTT-K2", 30);
         given(classService.update(eq(1L), any(ClassRequest.class)))
                 .willThrow(new DuplicateClassNameException("Ten lop da ton tai"));
 
@@ -141,9 +144,9 @@ class ClassControllerTest {
 
     @Test
     void updateClass_tra_ve_200_voi_du_lieu_moi() throws Exception {
-        ClassRequest request = new ClassRequest("CNTT-K2");
+        ClassRequest request = new ClassRequest("CNTT-K2", 30);
         given(classService.update(anyLong(), any(ClassRequest.class)))
-                .willReturn(new ClassResponse(1L, "CNTT-K2", List.of()));
+                .willReturn(new ClassResponse(1L, "CNTT-K2", 30, 0, List.of()));
 
         mockMvc.perform(put("/api/classes/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -154,7 +157,7 @@ class ClassControllerTest {
 
     @Test
     void updateClass_tra_ve_404_khi_khong_tim_thay() throws Exception {
-        ClassRequest request = new ClassRequest("CNTT-K2");
+        ClassRequest request = new ClassRequest("CNTT-K2", 30);
         given(classService.update(eq(99L), any(ClassRequest.class)))
                 .willThrow(new NotFoundException("Khong tim thay lop hoc"));
 
@@ -199,5 +202,69 @@ class ClassControllerTest {
 
         mockMvc.perform(get("/api/classes/{id}/students", 99L))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void addStudentToClass_tra_ve_200_khi_con_cho() throws Exception {
+        StudentResponse response = new StudentResponse(1L, "Nguyen Van A", "a@gmail.com",
+                LocalDate.of(2004, 3, 15), 21, LocalDateTime.of(2024, 1, 10, 8, 30), 1L);
+        given(studentService.addToClass(1L, 1L)).willReturn(response);
+
+        mockMvc.perform(post("/api/classes/{id}/students", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new AddStudentToClassRequest(1L))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.classId").value(1));
+    }
+
+    @Test
+    void addStudentToClass_tra_ve_404_khi_khong_tim_thay_lop() throws Exception {
+        given(studentService.addToClass(99L, 1L)).willThrow(new NotFoundException("Khong tim thay lop hoc"));
+
+        mockMvc.perform(post("/api/classes/{id}/students", 99L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new AddStudentToClassRequest(1L))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void addStudentToClass_tra_ve_404_khi_khong_tim_thay_sinh_vien() throws Exception {
+        given(studentService.addToClass(1L, 99L)).willThrow(new NotFoundException("Khong tim thay nguoi dung"));
+
+        mockMvc.perform(post("/api/classes/{id}/students", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new AddStudentToClassRequest(99L))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void addStudentToClass_tra_ve_409_khi_lop_het_cho() throws Exception {
+        given(studentService.addToClass(1L, 1L)).willThrow(new ClassFullException("Lop da het cho"));
+
+        mockMvc.perform(post("/api/classes/{id}/students", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new AddStudentToClassRequest(1L))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Lop da het cho"));
+    }
+
+    @Test
+    void addStudentToClass_tra_ve_409_khi_co_xung_dot_optimistic_lock() throws Exception {
+        given(studentService.addToClass(1L, 1L))
+                .willThrow(new ObjectOptimisticLockingFailureException(com.thienlv.student_api.entity.SchoolClass.class, 1L));
+
+        mockMvc.perform(post("/api/classes/{id}/students", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new AddStudentToClassRequest(1L))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void addStudentToClass_tra_ve_400_khi_thieu_studentId() throws Exception {
+        mockMvc.perform(post("/api/classes/{id}/students", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new AddStudentToClassRequest(null))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.studentId").exists());
     }
 }

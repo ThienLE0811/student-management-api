@@ -16,3 +16,4 @@ và thêm 1 dòng link ở danh sách dưới đây.
 - [Buổi 19 (DB song song) — LIMIT/OFFSET vs keyset pagination](ai-review-log/buoi-19-db.md)
 - [Buổi 20 — @Transactional (checked exception, self-invocation)](ai-review-log/buoi-20.md)
 - [Buổi 21 — Lỗi N+1 (tạo lỗi)](ai-review-log/buoi-21.md)
+- [Buổi 22 — Ghi đồng thời: optimistic locking (phần 1 — tạo bug)](ai-review-log/buoi-22.md)

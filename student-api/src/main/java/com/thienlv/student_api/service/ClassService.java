@@ -44,7 +44,7 @@ public class ClassService {
             throw new DuplicateClassNameException("Tên lớp đã tồn tại");
         }
 
-        SchoolClass newClass = new SchoolClass(null, name, LocalDateTime.now());
+        SchoolClass newClass = new SchoolClass(null, name, LocalDateTime.now(), request.capacity(), 0);
         SchoolClass saved = classRepository.save(newClass);
         log.info("Đã tạo lớp học id={}", saved.getId());
         return classMapper.toResponse(saved);
@@ -60,6 +60,7 @@ public class ClassService {
         }
 
         existing.setName(name);
+        existing.setCapacity(request.capacity());
         SchoolClass saved = classRepository.save(existing);
         return classMapper.toResponse(saved);
     }

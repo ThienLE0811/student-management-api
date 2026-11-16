@@ -1,5 +1,6 @@
 package com.thienlv.student_api.controller;
 
+import com.thienlv.student_api.dto.AddStudentToClassRequest;
 import com.thienlv.student_api.dto.ClassRequest;
 import com.thienlv.student_api.dto.ClassResponse;
 import com.thienlv.student_api.dto.StudentResponse;
@@ -36,6 +37,11 @@ public class ClassController {
     @GetMapping("/api/classes/{id}/students")
     public List<StudentResponse> getStudentsByClass(@PathVariable Long id) {
         return studentService.getByClassId(id);
+    }
+
+    @PostMapping("/api/classes/{id}/students")
+    public StudentResponse addStudentToClass(@PathVariable Long id, @Valid @RequestBody AddStudentToClassRequest request) {
+        return studentService.addToClass(id, request.studentId());
     }
 
     @PostMapping("/api/classes")

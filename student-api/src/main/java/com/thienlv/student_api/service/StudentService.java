@@ -5,6 +5,7 @@ import com.thienlv.student_api.dto.StudentResponse;
 import com.thienlv.student_api.entity.ClassTransferHistory;
 import com.thienlv.student_api.entity.SchoolClass;
 import com.thienlv.student_api.entity.Student;
+import com.thienlv.student_api.exception.ClassFullException;
 import com.thienlv.student_api.exception.DuplicateEmailException;
 import com.thienlv.student_api.exception.NotFoundException;
 import com.thienlv.student_api.mapper.StudentMapper;
@@ -175,6 +176,85 @@ public class StudentService {
         classTransferHistoryRepository.save(history);
 
         log.info("Đã chuyển sinh viên id={} từ lớp id={} sang lớp id={}", studentId, oldClass.getId(), newClass.getId());
+        return studentMapper.toResponse(saved);
+    }
+
+    @Transactional
+    public StudentResponse addToClass(Long classId, Long studentId) {
+        SchoolClass newClass = classRepository.findById(classId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        SchoolClass oldClass = student.getSchoolClass();
+        if (oldClass.getId().equals(classId)) {
+            return studentMapper.toResponse(student);
+        }
+
+        if (newClass.getEnrolledCount() >= newClass.getCapacity()) {
+            throw new ClassFullException("Lớp đã hết chỗ");
+        }
+
+        student.setSchoolClass(newClass);
+        Student saved = studentRepository.save(student);
+
+        newClass.setEnrolledCount(newClass.getEnrolledCount() + 1);
+        classRepository.save(newClass);
+
+        oldClass.setEnrolledCount(oldClass.getEnrolledCount() - 1);
+        classRepository.save(oldClass);
+
+        ClassTransferHistory history = new ClassTransferHistory(null, saved, oldClass, newClass, LocalDateTime.now());
+        classTransferHistoryRepository.save(history);
+
+        log.info("Đã thêm sinh viên id={} vào lớp id={} (từ lớp id={})", studentId, classId, oldClass.getId());
+        return studentMapper.toResponse(saved);
+    }
+
+    // Buoi 22 - ban doi chieu voi addToClass (optimistic locking @Version).
+    // Dung @Lock(PESSIMISTIC_WRITE) qua ClassRepository.findByIdForUpdate:
+    // khoa dong ca 2 lop ngay luc doc (SELECT ... FOR UPDATE), request den
+    // sau phai CHO o muc DB thay vi duoc doc gia tri cu roi fail luc commit
+    // nhu optimistic. Khoa theo thu tu id tang dan de tranh deadlock khi 2
+    // request khoa cheo 2 lop nguoc chieu nhau.
+    @Transactional
+    public StudentResponse addToClassPessimistic(Long classId, Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        Long oldClassId = student.getSchoolClass().getId();
+        if (oldClassId.equals(classId)) {
+            return studentMapper.toResponse(student);
+        }
+
+        Long lowerId = Math.min(oldClassId, classId);
+        Long higherId = Math.max(oldClassId, classId);
+        SchoolClass lower = classRepository.findByIdForUpdate(lowerId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+        SchoolClass higher = classRepository.findByIdForUpdate(higherId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+
+        SchoolClass newClass = lowerId.equals(classId) ? lower : higher;
+        SchoolClass oldClass = lowerId.equals(oldClassId) ? lower : higher;
+
+        if (newClass.getEnrolledCount() >= newClass.getCapacity()) {
+            throw new ClassFullException("Lớp đã hết chỗ");
+        }
+
+        student.setSchoolClass(newClass);
+        Student saved = studentRepository.save(student);
+
+        newClass.setEnrolledCount(newClass.getEnrolledCount() + 1);
+        classRepository.save(newClass);
+
+        oldClass.setEnrolledCount(oldClass.getEnrolledCount() - 1);
+        classRepository.save(oldClass);
+
+        ClassTransferHistory history = new ClassTransferHistory(null, saved, oldClass, newClass, LocalDateTime.now());
+        classTransferHistoryRepository.save(history);
+
+        log.info("Đã thêm sinh viên id={} vào lớp id={} (từ lớp id={}, pessimistic lock)", studentId, classId, oldClassId);
         return studentMapper.toResponse(saved);
     }
 }
