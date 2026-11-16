@@ -1,4 +1,6 @@
 package com.thienlv.student_api.dto;
 
-public record ClassResponse(Long id, String name) {
+import java.util.List;
+
+public record ClassResponse(Long id, String name, List<StudentResponse> students) {
 }

@@ -1,7 +1,9 @@
 package com.thienlv.student_api.controller;
 
+import com.thienlv.student_api.dto.StudentCourseResponse;
 import com.thienlv.student_api.dto.StudentRequest;
 import com.thienlv.student_api.dto.StudentResponse;
+import com.thienlv.student_api.service.EnrollmentService;
 import com.thienlv.student_api.service.StudentService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -17,8 +19,11 @@ import java.util.*;
 @RestController
 public class StudentController {
     private final StudentService studentService;
-    public StudentController(StudentService studentService ){
+    private final EnrollmentService enrollmentService;
+
+    public StudentController(StudentService studentService, EnrollmentService enrollmentService){
         this.studentService = studentService;
+        this.enrollmentService = enrollmentService;
     }
 
     @GetMapping("/api/students")
@@ -66,6 +71,11 @@ public class StudentController {
     @PutMapping("/api/students/{id}/class/{classId}")
     public StudentResponse transferClass(@PathVariable Long id, @PathVariable Long classId) {
         return studentService.transferClass(id, classId);
+    }
+
+    @GetMapping("/api/students/{id}/courses")
+    public List<StudentCourseResponse> getCoursesOfStudent(@PathVariable Long id) {
+        return enrollmentService.getCoursesByStudentId(id);
     }
 
 

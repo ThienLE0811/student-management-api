@@ -44,7 +44,7 @@ class ClassControllerTest {
     private StudentService studentService;
 
     private ClassResponse sampleResponse(long id) {
-        return new ClassResponse(id, "CNTT-K1");
+        return new ClassResponse(id, "CNTT-K1", List.of());
     }
 
     @Test
@@ -143,7 +143,7 @@ class ClassControllerTest {
     void updateClass_tra_ve_200_voi_du_lieu_moi() throws Exception {
         ClassRequest request = new ClassRequest("CNTT-K2");
         given(classService.update(anyLong(), any(ClassRequest.class)))
-                .willReturn(new ClassResponse(1L, "CNTT-K2"));
+                .willReturn(new ClassResponse(1L, "CNTT-K2", List.of()));
 
         mockMvc.perform(put("/api/classes/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)

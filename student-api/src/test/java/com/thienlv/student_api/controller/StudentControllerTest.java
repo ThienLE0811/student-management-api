@@ -4,6 +4,7 @@ import com.thienlv.student_api.dto.StudentRequest;
 import com.thienlv.student_api.dto.StudentResponse;
 import com.thienlv.student_api.exception.DuplicateEmailException;
 import com.thienlv.student_api.exception.NotFoundException;
+import com.thienlv.student_api.service.EnrollmentService;
 import com.thienlv.student_api.service.StudentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,9 @@ class StudentControllerTest {
 
     @MockitoBean
     private StudentService studentService;
+
+    @MockitoBean
+    private EnrollmentService enrollmentService;
 
     private StudentResponse sampleResponse(long id) {
         return new StudentResponse(id, "Nguyen Van A", "a@gmail.com",

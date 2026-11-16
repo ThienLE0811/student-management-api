@@ -2,6 +2,7 @@ package com.thienlv.student_api.service;
 
 import com.thienlv.student_api.dto.EnrollmentRequest;
 import com.thienlv.student_api.dto.EnrollmentResponse;
+import com.thienlv.student_api.dto.StudentCourseResponse;
 import com.thienlv.student_api.entity.Course;
 import com.thienlv.student_api.entity.Enrollment;
 import com.thienlv.student_api.entity.Student;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class EnrollmentService {
@@ -49,5 +51,15 @@ public class EnrollmentService {
         Enrollment saved = enrollmentRepository.save(enrollment);
         log.info("Đã tạo đăng ký id={} (student={}, course={})", saved.getId(), student.getId(), course.getId());
         return enrollmentMapper.toResponse(saved);
+    }
+
+    public List<StudentCourseResponse> getCoursesByStudentId(Long studentId) {
+        if (!studentRepository.existsById(studentId)) {
+            throw new NotFoundException("Không tìm thấy sinh viên");
+        }
+
+        return enrollmentRepository.findByStudentId(studentId).stream()
+                .map(e -> new StudentCourseResponse(e.getCourse().getId(), e.getCourse().getName(), e.getScore()))
+                .toList();
     }
 }

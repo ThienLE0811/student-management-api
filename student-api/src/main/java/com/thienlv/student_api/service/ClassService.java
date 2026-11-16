@@ -27,7 +27,7 @@ public class ClassService {
     }
 
     public List<ClassResponse> getAll() {
-        return classRepository.findAll().stream()
+        return classRepository.findAllWithStudents().stream()
                 .map(classMapper::toResponse)
                 .toList();
     }
