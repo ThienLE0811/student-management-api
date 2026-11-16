@@ -4,6 +4,9 @@ import com.thienlv.student_api.dto.StudentRequest;
 import com.thienlv.student_api.dto.StudentResponse;
 import com.thienlv.student_api.service.StudentService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -19,8 +22,11 @@ public class StudentController {
     }
 
     @GetMapping("/api/students")
-    public List<StudentResponse> getListStudent(@RequestParam(required = false) String name, @RequestParam(required = false) Integer minAge, @RequestParam(required = false) Integer maxAge) {
-        return studentService.getAll(name, minAge, maxAge);
+    public Page<StudentResponse> getListStudent(@RequestParam(required = false) String name,
+                                                 @RequestParam(required = false) Integer minAge,
+                                                 @RequestParam(required = false) Integer maxAge,
+                                                 @PageableDefault(size = 20, sort = "id") Pageable pageable) {
+        return studentService.getAll(name, minAge, maxAge, pageable);
     }
 
 

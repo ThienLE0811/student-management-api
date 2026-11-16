@@ -11,17 +11,25 @@ import com.thienlv.student_api.repository.ClassRepository;
 import com.thienlv.student_api.repository.StudentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
 @Service
 public class StudentService {
     private static final Logger log = LoggerFactory.getLogger(StudentService.class);
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final StudentRepository studentRepository;
     private final StudentMapper studentMapper;
@@ -33,11 +41,11 @@ public class StudentService {
         this.classRepository = classRepository;
     }
 
-    public List<StudentResponse> getAll(String name, Integer minAge, Integer maxAge) {
+    public Page<StudentResponse> getAll(String name, Integer minAge, Integer maxAge, Pageable pageable) {
         List<Student> students = studentRepository.findAll();
         LocalDate today = LocalDate.now();
 
-        return students.stream()
+        List<Student> filtered = students.stream()
                 .filter(student -> name == null || Objects.equals(student.getFull_name(), name))
                 .filter(student -> {
                     LocalDate dob = student.getBirth_date();
@@ -50,7 +58,43 @@ public class StudentService {
                     boolean matchMax = (maxAge == null || age <= maxAge);
                     return matchMin && matchMax;
                 })
-                .map(studentMapper::toResponse).toList();
+                .toList();
+
+        Pageable limitedPageable = limitPageSize(pageable);
+        List<Student> sorted = sortInMemory(filtered, limitedPageable.getSort());
+
+        int total = sorted.size();
+        int fromIndex = Math.min((int) limitedPageable.getOffset(), total);
+        int toIndex = Math.min(fromIndex + limitedPageable.getPageSize(), total);
+        List<Student> pageContent = sorted.subList(fromIndex, toIndex);
+
+        Page<Student> studentPage = new PageImpl<>(pageContent, limitedPageable, total);
+        return studentPage.map(studentMapper::toResponse);
+    }
+
+    private Pageable limitPageSize(Pageable pageable) {
+        if (pageable.getPageSize() <= MAX_PAGE_SIZE) {
+            return pageable;
+        }
+        return PageRequest.of(pageable.getPageNumber(), MAX_PAGE_SIZE, pageable.getSort());
+    }
+
+    private List<Student> sortInMemory(List<Student> students, Sort sort) {
+        if (sort.isUnsorted()) {
+            return students;
+        }
+
+        Comparator<Student> comparator = null;
+        for (Sort.Order order : sort) {
+            Comparator<Student> orderComparator = Comparator.comparing(student ->
+                    (Comparable) new BeanWrapperImpl(student).getPropertyValue(order.getProperty()));
+            if (order.isDescending()) {
+                orderComparator = orderComparator.reversed();
+            }
+            comparator = (comparator == null) ? orderComparator : comparator.thenComparing(orderComparator);
+        }
+
+        return students.stream().sorted(comparator).toList();
     }
 
     public StudentResponse getById(Long id) {

@@ -8,6 +8,9 @@ import com.thienlv.student_api.service.StudentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import tools.jackson.databind.ObjectMapper;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -19,6 +22,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -45,27 +49,29 @@ class StudentControllerTest {
 
     @Test
     void getListStudent_tra_ve_danh_sach_tu_service() throws Exception {
-        given(studentService.getAll(null, null, null))
-                .willReturn(List.of(sampleResponse(1L), sampleResponse(2L)));
+        Page<StudentResponse> page = new PageImpl<>(List.of(sampleResponse(1L), sampleResponse(2L)));
+        given(studentService.getAll(eq(null), eq(null), eq(null), any(Pageable.class)))
+                .willReturn(page);
 
         mockMvc.perform(get("/api/students"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].email").value("a@gmail.com"));
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[0].email").value("a@gmail.com"));
     }
 
     @Test
     void getListStudent_truyen_query_param_xuong_service() throws Exception {
-        given(studentService.getAll("An", 18, 25))
-                .willReturn(List.of(sampleResponse(1L)));
+        Page<StudentResponse> page = new PageImpl<>(List.of(sampleResponse(1L)));
+        given(studentService.getAll(eq("An"), eq(18), eq(25), any(Pageable.class)))
+                .willReturn(page);
 
         mockMvc.perform(get("/api/students")
                         .param("name", "An")
                         .param("minAge", "18")
                         .param("maxAge", "25"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.content.length()").value(1));
     }
 
     @Test
