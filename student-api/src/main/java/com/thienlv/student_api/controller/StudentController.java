@@ -63,6 +63,11 @@ public class StudentController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/api/students/{id}/class/{classId}")
+    public StudentResponse transferClass(@PathVariable Long id, @PathVariable Long classId) {
+        return studentService.transferClass(id, classId);
+    }
+
 
 }
 

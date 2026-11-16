@@ -8,6 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -39,6 +40,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateEnrollmentException.class)
     public ProblemDetail handleDuplicateEnrollment(DuplicateEnrollmentException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ProblemDetail handleNoResourceFound(NoResourceFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Không tìm thấy endpoint");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

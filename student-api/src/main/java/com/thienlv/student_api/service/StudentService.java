@@ -2,12 +2,14 @@ package com.thienlv.student_api.service;
 
 import com.thienlv.student_api.dto.StudentRequest;
 import com.thienlv.student_api.dto.StudentResponse;
+import com.thienlv.student_api.entity.ClassTransferHistory;
 import com.thienlv.student_api.entity.SchoolClass;
 import com.thienlv.student_api.entity.Student;
 import com.thienlv.student_api.exception.DuplicateEmailException;
 import com.thienlv.student_api.exception.NotFoundException;
 import com.thienlv.student_api.mapper.StudentMapper;
 import com.thienlv.student_api.repository.ClassRepository;
+import com.thienlv.student_api.repository.ClassTransferHistoryRepository;
 import com.thienlv.student_api.repository.StudentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,13 +37,17 @@ public class StudentService {
     private final StudentRepository studentRepository;
     private final StudentMapper studentMapper;
     private final ClassRepository classRepository;
+    private final ClassTransferHistoryRepository classTransferHistoryRepository;
 
-    public StudentService(StudentRepository studentRepository, StudentMapper studentMapper, ClassRepository classRepository){
+    public StudentService(StudentRepository studentRepository, StudentMapper studentMapper, ClassRepository classRepository,
+                           ClassTransferHistoryRepository classTransferHistoryRepository){
         this.studentRepository = studentRepository;
         this.studentMapper = studentMapper;
         this.classRepository = classRepository;
+        this.classTransferHistoryRepository = classTransferHistoryRepository;
     }
 
+    @Transactional(readOnly = true)
     public Page<StudentResponse> getAll(String name, Integer minAge, Integer maxAge, Pageable pageable) {
         List<Student> students = studentRepository.findAll();
         LocalDate today = LocalDate.now();
@@ -97,10 +104,12 @@ public class StudentService {
         return students.stream().sorted(comparator).toList();
     }
 
+    @Transactional(readOnly = true)
     public StudentResponse getById(Long id) {
         return studentRepository.findById(id).map(studentMapper::toResponse).orElseThrow(()-> new NotFoundException("Không tìm thấy người dùng"));
     }
 
+    @Transactional
     public StudentResponse create(StudentRequest request) {
         boolean sameEmail = studentRepository.findAll().stream().anyMatch(s -> s.getEmail().equals(request.email()));
         if(sameEmail)  throw new DuplicateEmailException("Email đã tồn tại");
@@ -114,6 +123,7 @@ public class StudentService {
         return studentMapper.toResponse(saved);
     }
 
+    @Transactional
     public StudentResponse update(Long id, StudentRequest request) {
         Student student = studentRepository.findById(id).orElseThrow(()-> new NotFoundException("Không tìm thấy người dùng"));
 
@@ -126,12 +136,14 @@ public class StudentService {
     }
 
 
+    @Transactional
     public void deleteById(Long id) {
         if(!studentRepository.existsById(id)) throw new NotFoundException("Không tìm thấy người dùng");
         studentRepository.deleteById(id);
         log.info("Đã xóa sinh viên id={}", id);
     }
 
+    @Transactional(readOnly = true)
     public List<StudentResponse> getByClassId(Long classId) {
         if (!classRepository.existsById(classId)) throw new NotFoundException("Không tìm thấy lớp học");
         return studentRepository.findBySchoolClassId(classId).stream()
@@ -139,9 +151,30 @@ public class StudentService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<StudentResponse> getWithoutCourse() {
         return studentRepository.findStudentsWithoutCourse().stream()
                 .map(studentMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional
+    public StudentResponse transferClass(Long studentId, Long classId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        SchoolClass newClass = classRepository.findById(classId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+
+        SchoolClass oldClass = student.getSchoolClass();
+
+        student.setSchoolClass(newClass);
+        Student saved = studentRepository.save(student);
+
+        ClassTransferHistory history = new ClassTransferHistory(null, saved, oldClass, newClass, LocalDateTime.now());
+        classTransferHistoryRepository.save(history);
+
+        log.info("Đã chuyển sinh viên id={} từ lớp id={} sang lớp id={}", studentId, oldClass.getId(), newClass.getId());
+        return studentMapper.toResponse(saved);
     }
 }

@@ -14,3 +14,4 @@ và thêm 1 dòng link ở danh sách dưới đây.
 - [Buổi 18 — Test repository với @DataJpaTest](ai-review-log/buoi-18.md)
 - [Buổi 19 — Phân trang và Flyway](ai-review-log/buoi-19.md)
 - [Buổi 19 (DB song song) — LIMIT/OFFSET vs keyset pagination](ai-review-log/buoi-19-db.md)
+- [Buổi 20 — @Transactional (checked exception, self-invocation)](ai-review-log/buoi-20.md)
