@@ -1,60 +1,73 @@
 # Student Management API
 
-API quản lý sinh viên (Student Management) được xây dựng bằng Spring Boot, cung cấp các chức năng CRUD cơ bản cho sinh viên, lớp học, khóa học... thông qua REST API.
-
-> ⚠️ Dự án hiện đang ở giai đoạn khởi tạo, chưa có mã nguồn. README này đóng vai trò là khung sườn (template) để định hướng phát triển; các mục sẽ được cập nhật chi tiết khi code được triển khai.
+API quản lý sinh viên (Student Management) xây dựng bằng Spring Boot 4, cung cấp
+CRUD cho sinh viên, lớp học, khóa học, ghi danh (enrollment) và các thống kê điểm
+số liên quan, theo kiến trúc Controller → Service → Repository → Database.
 
 ## Mục tiêu
 
 - Xây dựng REST API quản lý thông tin sinh viên (CRUD).
 - Thực hành kiến trúc layered (Controller → Service → Repository → Database) với Spring Boot.
-- Thực hành thiết kế và tương tác cơ sở dữ liệu quan hệ (PostgreSQL/Oracle) qua Spring Data JPA.
+- Thực hành thiết kế và tương tác cơ sở dữ liệu quan hệ (PostgreSQL) qua Spring Data JPA.
 
 ## Tech Stack
 
 - **Ngôn ngữ**: Java 25
-- **Framework**: Spring Boot, Spring MVC
-- **Data access**: Spring Data JPA
-- **Database**: PostgreSQL / Oracle (tùy môi trường)
-- **Build tool**: Maven hoặc Gradle (sẽ chốt khi khởi tạo project)
-- **API**: RESTful API
+- **Framework**: Spring Boot 4.1.2, Spring MVC
+- **Data access**: Spring Data JPA + Hibernate, Flyway (migration)
+- **Database**: PostgreSQL 16 (container qua `compose.yaml`)
+- **Build tool**: Maven (Maven Wrapper)
+- **Mapping**: MapStruct + Lombok
+- **API**: RESTful API, lỗi trả về dạng `ProblemDetail`
 
-## Kiến trúc dự kiến
+## Kiến trúc
 
 ```
 Controller  →  Service  →  Repository  →  Database
 ```
 
-- **Controller**: Tiếp nhận HTTP request, validate đầu vào, trả về response.
-- **Service**: Xử lý logic nghiệp vụ, quản lý transaction boundary.
-- **Repository**: Giao tiếp với database thông qua Spring Data JPA.
-- **Entity/Model**: Ánh xạ bảng dữ liệu (sinh viên, lớp học, khóa học...).
+- **Controller** (`controller/`): nhận request, validate (`@Valid`), gọi Service, trả response.
+- **Service** (`service/`): business logic (kiểm tra trùng dữ liệu, capacity lớp, optimistic locking...).
+- **Repository** (`repository/`): `JpaRepository`, thao tác dữ liệu.
+- **Entity** (`entity/`): ánh xạ bảng DB.
+- **DTO** (`dto/`): request/response dạng `record`.
+- **Mapper** (`mapper/`): MapStruct, map entity ↔ DTO.
+- **Exception** (`exception/`): custom exception + `GlobalExceptionHandler`.
 
-## Cấu trúc thư mục dự kiến
+## Cấu trúc thư mục
 
 ```
 student-management-api/
-├── src/
-│   ├── main/
-│   │   ├── java/com/example/studentmanagement/
-│   │   │   ├── controller/
-│   │   │   ├── service/
-│   │   │   ├── repository/
-│   │   │   ├── entity/
-│   │   │   ├── dto/
-│   │   │   └── exception/
-│   │   └── resources/
-│   │       └── application.properties (hoặc application.yml)
-│   └── test/
-├── pom.xml (hoặc build.gradle)
-└── README.md
+├── compose.yaml                  # Postgres container cho môi trường dev
+├── sql/                           # Track học SQL song song (không tự đồng bộ với schema thật)
+├── docs/
+│   └── ai-review-log.md
+└── student-api/                  # Module Spring Boot chính
+    ├── mvnw / mvnw.cmd
+    ├── pom.xml
+    └── src/
+        ├── main/
+        │   ├── java/com/thienlv/student_api/
+        │   │   ├── controller/
+        │   │   ├── service/
+        │   │   ├── repository/
+        │   │   ├── entity/
+        │   │   ├── dto/
+        │   │   ├── mapper/
+        │   │   ├── exception/
+        │   │   └── filter/
+        │   └── resources/
+        │       ├── application.yml
+        │       ├── application-dev.yml
+        │       ├── application-prod.yml
+        │       └── db/migration/   # Flyway V1..V5
+        └── test/
 ```
 
 ## Yêu cầu môi trường
 
 - JDK 25
-- Maven hoặc Gradle
-- PostgreSQL hoặc Oracle Database
+- Docker Desktop (chạy Postgres qua `compose.yaml`, và chạy Testcontainers cho test)
 - IDE: IntelliJ IDEA (khuyến nghị)
 
 ## Cài đặt & chạy dự án
@@ -64,39 +77,193 @@ student-management-api/
 git clone <repository-url>
 cd student-management-api
 
-# Build project (Maven)
-./mvnw clean install
+# 1. Khởi động Postgres (từ thư mục gốc repo)
+docker compose up -d
 
-# Chạy ứng dụng
-./mvnw spring-boot:run
+# 2. Build & chạy ứng dụng (từ thư mục student-api/)
+cd student-api
+./mvnw clean install
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-> Lệnh build/run cụ thể sẽ được cập nhật sau khi project được khởi tạo bằng Spring Initializr.
+Trên Windows dùng `mvnw.cmd` thay cho `./mvnw`.
+
+> Không có profile mặc định nào được kích hoạt sẵn (`spring.profiles.active` không
+> đặt trong `application.yml`) — phải truyền `-Dspring-boot.run.profiles=dev` khi
+> chạy với Postgres thật, nếu không sẽ không có `datasource` nào được cấu hình.
+
+Ứng dụng chạy ở `server.port=8081` → base URL mặc định: `http://localhost:8081`.
+
+### Chạy test
+
+```bash
+cd student-api
+./mvnw test
+```
+
+Một số test dùng Testcontainers (tự pull image `postgres:16-alpine`) nên cần
+Docker Desktop đang chạy; `StudentApiApplicationTests` (profile `dev`) cần
+container Postgres từ `compose.yaml` đang chạy ở cổng 5433.
 
 ## Cấu hình database
 
-Cấu hình kết nối database sẽ được khai báo trong `application.yml`, ví dụ:
+Container Postgres (`compose.yaml`, service `postgres`, image `postgres:16-alpine`):
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/student_management
-spring.datasource.username=postgres
-spring.datasource.password=your_password
-spring.jpa.hibernate.ddl-auto=update
+| Biến            | Giá trị       |
+|-----------------|---------------|
+| `POSTGRES_DB`       | `student_api` |
+| `POSTGRES_USER`     | `student_api` |
+| `POSTGRES_PASSWORD` | `student_api` |
+| Port map            | `5433:5432`   |
+
+Profile `dev` (`application-dev.yml`) trỏ tới:
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/student_api
+    username: student_api
+    password: student_api
+  jpa:
+    hibernate:
+      ddl-auto: validate   # Hibernate chỉ validate, không tự tạo/sửa bảng
 ```
 
-## API Endpoints (dự kiến)
+Schema được quản lý qua **Flyway** (`src/main/resources/db/migration/`), chạy tự
+động khi ứng dụng khởi động:
 
-| Method | Endpoint            | Mô tả                      |
-|--------|---------------------|----------------------------|
-| GET    | /api/students       | Lấy danh sách sinh viên    |
-| GET    | /api/students/{id}  | Lấy thông tin 1 sinh viên  |
-| POST   | /api/students       | Tạo mới sinh viên          |
-| PUT    | /api/students/{id}  | Cập nhật thông tin sinh viên |
-| DELETE | /api/students/{id}  | Xóa sinh viên              |
+| Migration | Nội dung |
+|-----------|----------|
+| `V1__init.sql` | Tạo bảng `classes`, `courses`, `students`, `enrollments` |
+| `V2__add_indexes.sql` | Index cho `students.class_id`, `enrollments(course_id, student_id)` |
+| `V3__class_transfer_history.sql` | Bảng `class_transfer_history` (lịch sử chuyển lớp) |
+| `V4__class_capacity.sql` | Thêm `capacity`, `enrolled_count` vào `classes` |
+| `V5__class_version.sql` | Thêm `version` vào `classes` (optimistic locking) |
+
+> `sql/` là track học SQL song song, **không** đồng bộ tự động với schema thật —
+> entity Java + Flyway migration mới là nguồn sự thật cho schema.
+
+## ERD
+
+```mermaid
+erDiagram
+    SCHOOL_CLASS ||--o{ STUDENT : "has"
+    STUDENT ||--o{ ENROLLMENT : "enrolls"
+    COURSE ||--o{ ENROLLMENT : "has"
+    STUDENT ||--o{ CLASS_TRANSFER_HISTORY : "transfers"
+    SCHOOL_CLASS ||--o{ CLASS_TRANSFER_HISTORY : "from/to"
+
+    SCHOOL_CLASS {
+        bigint id PK
+        varchar name UK
+        timestamp created_at
+        int capacity
+        int enrolled_count
+        bigint version
+    }
+    STUDENT {
+        bigint id PK
+        varchar full_name
+        varchar email UK
+        date birth_date
+        timestamp created_at
+        bigint class_id FK
+    }
+    COURSE {
+        bigint id PK
+        varchar name UK
+        timestamp created_at
+    }
+    ENROLLMENT {
+        bigint id PK
+        bigint student_id FK
+        bigint course_id FK
+        double score
+        timestamp created_at
+    }
+    CLASS_TRANSFER_HISTORY {
+        bigint id PK
+        bigint student_id FK
+        bigint from_class_id FK
+        bigint to_class_id FK
+        timestamp transferred_at
+    }
+```
+
+- `Student` → `SchoolClass`: nhiều-một, bắt buộc (`class_id NOT NULL`).
+- `Enrollment` là bảng trung gian Student ↔ Course (many-to-many qua entity
+  thường, không dùng `@ManyToMany`), unique theo `(student_id, course_id)`.
+- `ClassTransferHistory` ghi lại mỗi lần sinh viên đổi lớp (`from_class_id` → `to_class_id`).
+- `SchoolClass.version` dùng cho `@Version` (optimistic locking) khi nhiều
+  request cùng thêm sinh viên vào lớp.
+
+## API Endpoints
+
+Base URL: `http://localhost:8081`
+
+### Students (`/api/students`)
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET    | `/api/students` | Danh sách sinh viên, có phân trang (`Pageable`, mặc định `size=20&sort=id`) + filter `name`, `minAge`, `maxAge` |
+| GET    | `/api/students/{id}` | Chi tiết 1 sinh viên |
+| GET    | `/api/students/without-course` | Sinh viên chưa đăng ký khóa học nào |
+| GET    | `/api/students/{id}/courses` | Danh sách khóa học + điểm của 1 sinh viên |
+| POST   | `/api/students` | Tạo sinh viên mới (`201` + header `Location`) |
+| PUT    | `/api/students/{id}` | Cập nhật thông tin sinh viên |
+| PUT    | `/api/students/{id}/class/{classId}` | Chuyển lớp cho sinh viên (ghi lịch sử) |
+| DELETE | `/api/students/{id}` | Xóa sinh viên (`204`) |
+
+### Classes (`/api/classes`)
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET    | `/api/classes` | Danh sách tất cả lớp |
+| GET    | `/api/classes/{id}` | Chi tiết 1 lớp |
+| GET    | `/api/classes/{id}/students` | Danh sách sinh viên của 1 lớp |
+| POST   | `/api/classes` | Tạo lớp mới (`201` + `Location`) |
+| POST   | `/api/classes/{id}/students` | Thêm sinh viên vào lớp (kiểm tra capacity, optimistic lock) |
+| PUT    | `/api/classes/{id}` | Cập nhật lớp |
+| DELETE | `/api/classes/{id}` | Xóa lớp (`204`) |
+
+### Courses (`/api/courses`)
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET    | `/api/courses` | Danh sách tất cả khóa học |
+| GET    | `/api/courses/{id}` | Chi tiết khóa học |
+| GET    | `/api/courses/{id}/average-score` | Điểm trung bình của khóa học |
+| GET    | `/api/courses/{id}/top-scores` | Top điểm cao trong khóa học (có rank) |
+| GET    | `/api/courses/{id}/score-vs-average` | So sánh điểm từng sinh viên với điểm trung bình |
+| POST   | `/api/courses` | Tạo khóa học mới (`201` + `Location`) |
+| PUT    | `/api/courses/{id}` | Cập nhật khóa học |
+| DELETE | `/api/courses/{id}` | Xóa khóa học (`204`) |
+
+### Enrollments (`/api/enrollments`)
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| POST   | `/api/enrollments` | Ghi danh sinh viên vào khóa học kèm điểm (`201` + `Location`) |
+
+### Format lỗi
+
+Toàn bộ lỗi trả về dạng `ProblemDetail` qua `GlobalExceptionHandler`:
+
+| Trường hợp | HTTP status |
+|------------|-------------|
+| `NotFoundException` | 404 |
+| `DuplicateEmailException`, `DuplicateClassNameException`, `DuplicateCourseNameException`, `DuplicateEnrollmentException`, `ClassFullException` | 409 |
+| Optimistic lock conflict (2 request cùng ghi vào 1 lớp) | 409 |
+| Lỗi validate (`@Valid`) | 400, kèm property `errors` (map field → message) |
+| Route không tồn tại | 404 |
+| Lỗi khác | 500 (đã log, không lộ message/stacktrace gốc) |
 
 ## Roadmap
 
-Dự án được phát triển theo lộ trình học Spring Boot & Database, bao gồm các giai đoạn: thiết kế entity, CRUD cơ bản, validation & exception handling, quan hệ giữa các bảng, phân trang/tìm kiếm, bảo mật (Spring Security/JWT) và triển khai.
+Dự án được phát triển theo lộ trình học Spring Boot & Database, đã hoàn thành:
+thiết kế entity, CRUD cơ bản, validation & exception handling, quan hệ giữa các
+bảng, phân trang/tìm kiếm, Flyway migration, xử lý N+1 (`@EntityGraph`),
+`@Transactional`, optimistic locking (`@Version`) cho capacity lớp.
 
 ## Quy tắc trong tháng
 
